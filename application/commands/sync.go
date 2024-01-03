@@ -10,7 +10,8 @@ import (
 )
 
 func init() {
-	syncCommand.Flags().IntVarP(&limit, "limit", "l", 10, "Limit number of synced tracks")
+	syncCommand.Flags().IntVarP(&limit, "limit", "l", 10, "Limit number of tracks for syncing. Specify 0 to sync all tracks without limitations. In this case, the default limit for a group of tracks will be 50 (note: important for accurate page counting)")
+	syncCommand.Flags().IntVarP(&page, "page", "p", 1, "Page number to start syncing from")
 	rootCommand.AddCommand(syncCommand)
 }
 
@@ -19,13 +20,19 @@ var syncCommand = &cobra.Command{
 	Short: "Sync recently loved tracks from one service to another",
 	Args:  cobra.MinimumNArgs(2),
 	RunE: func(command *cobra.Command, args []string) error {
-		return sync(services.AvailableServices, limit, command.OutOrStdout(), args)
+		return sync(services.AvailableServices, limit, page, command.OutOrStdout(), args)
 	},
 }
 
-func sync(serviceLoader domain.ServiceLoader, limit int, writer io.Writer, args []string) error {
+func sync(serviceLoader domain.ServiceLoader, limit int, page int, writer io.Writer, args []string) error {
 	sourceServiceName := args[0]
 	targetServiceName := args[1]
+
+	continuously := false
+	if limit == 0 {
+		limit = 50
+		continuously = true
+	}
 
 	sourceService, err := serviceLoader.ForName(sourceServiceName)
 	if err != nil {
@@ -48,17 +55,22 @@ func sync(serviceLoader domain.ServiceLoader, limit int, writer io.Writer, args 
 		return fmt.Errorf("not logged in on %s", targetService.Name())
 	}
 
-	tracks, err := sourceService.GetLovedTracks(limit)
-	if err != nil {
-		return err
-	}
-
-	for _, track := range tracks {
-		if err := targetService.LoveTrack(track); err != nil {
+	for ; ; page++ {
+		tracks, err := sourceService.GetLovedTracks(limit, page)
+		if err != nil {
 			return err
 		}
 
-		fmt.Fprintln(writer, "Synced:", track.String())
+		for _, track := range tracks {
+			if err := targetService.LoveTrack(track); err != nil {
+				return err
+			}
+
+			fmt.Fprintln(writer, "Synced:", track.String())
+		}
+		if !continuously || len(tracks) < limit {
+			break
+		}
 	}
 
 	return nil

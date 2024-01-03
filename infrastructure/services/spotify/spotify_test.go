@@ -3,6 +3,7 @@ package spotify
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/mock/gomock"
 	"os"
 	"reflect"
 	"testing"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/dietrichm/admirer/domain"
 	"github.com/dietrichm/admirer/infrastructure/config"
-	"github.com/golang/mock/gomock"
 	"github.com/zmb3/spotify"
 	"golang.org/x/oauth2"
 )
@@ -225,7 +225,7 @@ func TestSpotify(t *testing.T) {
 				Name:   "Mr. Testy",
 			},
 		}
-		got, err := service.GetLovedTracks(5)
+		got, err := service.GetLovedTracks(5, 1)
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
@@ -248,7 +248,7 @@ func TestSpotify(t *testing.T) {
 			client: client,
 		}
 
-		got, err := service.GetLovedTracks(5)
+		got, err := service.GetLovedTracks(5, 1)
 
 		if err == nil {
 			t.Error("Expected an error")

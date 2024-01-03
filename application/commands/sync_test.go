@@ -3,10 +3,10 @@ package commands
 import (
 	"bytes"
 	"errors"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/dietrichm/admirer/domain"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,7 +26,7 @@ func TestSync(t *testing.T) {
 
 		sourceService := domain.NewMockService(ctrl)
 		sourceService.EXPECT().Authenticated().Return(true)
-		sourceService.EXPECT().GetLovedTracks(5).Return(tracks, nil)
+		sourceService.EXPECT().GetLovedTracks(5, 1).Return(tracks, nil)
 		sourceService.EXPECT().Close()
 
 		targetService := domain.NewMockService(ctrl)
@@ -39,7 +39,7 @@ func TestSync(t *testing.T) {
 		serviceLoader.EXPECT().ForName("source").Return(sourceService, nil)
 		serviceLoader.EXPECT().ForName("target").Return(targetService, nil)
 
-		got, err := executeSync(serviceLoader, 5, "source", "target")
+		got, err := executeSync(serviceLoader, 5, 1, "source", "target")
 
 		expected := `Synced: Awesome Artist - Blam (Instrumental)
 Synced: Foo & Bar - Mr. Testy
@@ -61,7 +61,7 @@ Synced: Foo & Bar - Mr. Testy
 
 		sourceService := domain.NewMockService(ctrl)
 		sourceService.EXPECT().Authenticated().Return(true)
-		sourceService.EXPECT().GetLovedTracks(gomock.Any()).Return(tracks, nil)
+		sourceService.EXPECT().GetLovedTracks(gomock.Any(), gomock.Any()).Return(tracks, nil)
 		sourceService.EXPECT().Close()
 
 		targetService := domain.NewMockService(ctrl)
@@ -73,7 +73,7 @@ Synced: Foo & Bar - Mr. Testy
 		serviceLoader.EXPECT().ForName("source").Return(sourceService, nil)
 		serviceLoader.EXPECT().ForName("target").Return(targetService, nil)
 
-		output, err := executeSync(serviceLoader, 10, "source", "target")
+		output, err := executeSync(serviceLoader, 10, 1, "source", "target")
 
 		assert.Error(t, err)
 		assert.Empty(t, output)
@@ -84,7 +84,7 @@ Synced: Foo & Bar - Mr. Testy
 
 		sourceService := domain.NewMockService(ctrl)
 		sourceService.EXPECT().Authenticated().Return(true)
-		sourceService.EXPECT().GetLovedTracks(gomock.Any()).Return(nil, errors.New("read error"))
+		sourceService.EXPECT().GetLovedTracks(gomock.Any(), gomock.Any()).Return(nil, errors.New("read error"))
 		sourceService.EXPECT().Close()
 
 		targetService := domain.NewMockService(ctrl)
@@ -95,7 +95,7 @@ Synced: Foo & Bar - Mr. Testy
 		serviceLoader.EXPECT().ForName("source").Return(sourceService, nil)
 		serviceLoader.EXPECT().ForName("target").Return(targetService, nil)
 
-		output, err := executeSync(serviceLoader, 10, "source", "target")
+		output, err := executeSync(serviceLoader, 10, 1, "source", "target")
 
 		assert.Error(t, err)
 		assert.Empty(t, output)
@@ -107,7 +107,7 @@ Synced: Foo & Bar - Mr. Testy
 		serviceLoader := domain.NewMockServiceLoader(ctrl)
 		serviceLoader.EXPECT().ForName("source").Return(nil, errors.New("service error"))
 
-		output, err := executeSync(serviceLoader, 10, "source", "target")
+		output, err := executeSync(serviceLoader, 10, 1, "source", "target")
 
 		assert.Error(t, err)
 		assert.Empty(t, output)
@@ -121,7 +121,7 @@ Synced: Foo & Bar - Mr. Testy
 		serviceLoader.EXPECT().ForName("source").Return(sourceService, nil)
 		serviceLoader.EXPECT().ForName("target").Return(nil, errors.New("service error"))
 
-		output, err := executeSync(serviceLoader, 10, "source", "target")
+		output, err := executeSync(serviceLoader, 10, 1, "source", "target")
 
 		assert.Error(t, err)
 		assert.Empty(t, output)
@@ -142,7 +142,7 @@ Synced: Foo & Bar - Mr. Testy
 		serviceLoader.EXPECT().ForName("source").Return(sourceService, nil)
 		serviceLoader.EXPECT().ForName("target").Return(targetService, nil)
 
-		output, err := executeSync(serviceLoader, 10, "source", "target")
+		output, err := executeSync(serviceLoader, 10, 1, "source", "target")
 
 		assert.Error(t, err)
 		assert.Empty(t, output)
@@ -164,15 +164,15 @@ Synced: Foo & Bar - Mr. Testy
 		serviceLoader.EXPECT().ForName("source").Return(sourceService, nil)
 		serviceLoader.EXPECT().ForName("target").Return(targetService, nil)
 
-		output, err := executeSync(serviceLoader, 10, "source", "target")
+		output, err := executeSync(serviceLoader, 10, 1, "source", "target")
 
 		assert.Error(t, err)
 		assert.Empty(t, output)
 	})
 }
 
-func executeSync(serviceLoader domain.ServiceLoader, limit int, args ...string) (string, error) {
+func executeSync(serviceLoader domain.ServiceLoader, limit int, page int, args ...string) (string, error) {
 	buffer := new(bytes.Buffer)
-	err := sync(serviceLoader, limit, buffer, args)
+	err := sync(serviceLoader, limit, page, buffer, args)
 	return buffer.String(), err
 }

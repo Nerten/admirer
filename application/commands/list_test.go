@@ -3,10 +3,10 @@ package commands
 import (
 	"bytes"
 	"errors"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/dietrichm/admirer/domain"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,13 +27,13 @@ func TestList(t *testing.T) {
 
 		service := domain.NewMockService(ctrl)
 		service.EXPECT().Authenticated().Return(true)
-		service.EXPECT().GetLovedTracks(5).Return(tracks, nil)
+		service.EXPECT().GetLovedTracks(5, 1).Return(tracks, nil)
 		service.EXPECT().Close()
 
 		serviceLoader := domain.NewMockServiceLoader(ctrl)
 		serviceLoader.EXPECT().ForName("foo").Return(service, nil)
 
-		got, err := executeList(serviceLoader, 5, "foo")
+		got, err := executeList(serviceLoader, 5, 1, "foo")
 
 		expected := `Awesome Artist - Blam (Instrumental)
 Foo & Bar - Mr. Testy
@@ -50,7 +50,7 @@ Foo & Bar - Mr. Testy
 		serviceLoader := domain.NewMockServiceLoader(ctrl)
 		serviceLoader.EXPECT().ForName(gomock.Any()).Return(nil, errors.New(expected))
 
-		output, err := executeList(serviceLoader, 5, "foobar")
+		output, err := executeList(serviceLoader, 5, 1, "foobar")
 
 		assert.EqualError(t, err, expected)
 		assert.Empty(t, output)
@@ -67,7 +67,7 @@ Foo & Bar - Mr. Testy
 		serviceLoader := domain.NewMockServiceLoader(ctrl)
 		serviceLoader.EXPECT().ForName("foo").Return(service, nil)
 
-		output, err := executeList(serviceLoader, 3, "foo")
+		output, err := executeList(serviceLoader, 3, 1, "foo")
 
 		assert.Error(t, err)
 		assert.Empty(t, output)
@@ -78,21 +78,21 @@ Foo & Bar - Mr. Testy
 
 		service := domain.NewMockService(ctrl)
 		service.EXPECT().Authenticated().Return(true)
-		service.EXPECT().GetLovedTracks(3).Return(nil, errors.New("load error"))
+		service.EXPECT().GetLovedTracks(3, 1).Return(nil, errors.New("load error"))
 		service.EXPECT().Close()
 
 		serviceLoader := domain.NewMockServiceLoader(ctrl)
 		serviceLoader.EXPECT().ForName("foo").Return(service, nil)
 
-		output, err := executeList(serviceLoader, 3, "foo")
+		output, err := executeList(serviceLoader, 3, 1, "foo")
 
 		assert.Error(t, err)
 		assert.Empty(t, output)
 	})
 }
 
-func executeList(serviceLoader domain.ServiceLoader, limit int, args ...string) (string, error) {
+func executeList(serviceLoader domain.ServiceLoader, limit int, page int, args ...string) (string, error) {
 	buffer := new(bytes.Buffer)
-	err := list(serviceLoader, limit, buffer, args)
+	err := list(serviceLoader, limit, page, buffer, args)
 	return buffer.String(), err
 }

@@ -3,11 +3,11 @@ package commands
 import (
 	"bytes"
 	"errors"
+	"go.uber.org/mock/gomock"
 	"testing"
 
 	"github.com/dietrichm/admirer/domain"
 	"github.com/dietrichm/admirer/infrastructure/authentication"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 

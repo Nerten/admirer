@@ -2,12 +2,12 @@ package lastfm
 
 import (
 	"errors"
+	"go.uber.org/mock/gomock"
 	"os"
 	"testing"
 
 	"github.com/dietrichm/admirer/domain"
 	"github.com/dietrichm/admirer/infrastructure/config"
-	"github.com/golang/mock/gomock"
 	"github.com/shkh/lastfm-go/lastfm"
 )
 
@@ -223,7 +223,7 @@ func TestLastfm(t *testing.T) {
 				Name:   "Mr. Testy",
 			},
 		}
-		got, err := service.GetLovedTracks(5)
+		got, err := service.GetLovedTracks(5, 1)
 
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
@@ -245,7 +245,7 @@ func TestLastfm(t *testing.T) {
 
 		service := &Lastfm{userAPI: userAPI}
 
-		got, err := service.GetLovedTracks(5)
+		got, err := service.GetLovedTracks(5, 1)
 
 		if err == nil {
 			t.Error("Expected an error")
@@ -267,7 +267,7 @@ func TestLastfm(t *testing.T) {
 
 		service := &Lastfm{userAPI: userAPI}
 
-		got, err := service.GetLovedTracks(5)
+		got, err := service.GetLovedTracks(5, 1)
 
 		if err == nil {
 			t.Error("Expected an error")

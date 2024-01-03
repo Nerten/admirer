@@ -5,6 +5,7 @@ package spotify
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -30,6 +31,10 @@ type Client interface {
 	CurrentUsersTracksOpt(opt *spotify.Options) (*spotify.SavedTrackPage, error)
 	SearchOpt(query string, t spotify.SearchType, opt *spotify.Options) (*spotify.SearchResult, error)
 	AddTracksToLibrary(ids ...spotify.ID) error
+	GetPlaylistTracksOpt(id spotify.ID, opt *spotify.Options, fields string) (*spotify.PlaylistTrackPage, error)
+	CreatePlaylistForUser(userID, playlistName, description string, public bool) (*spotify.FullPlaylist, error)
+	ReplacePlaylistTracks(playlistID spotify.ID, trackIDs ...spotify.ID) error
+	AddTracksToPlaylist(playlistID spotify.ID, trackIDs ...spotify.ID) (snapshotID string, err error)
 }
 
 // Spotify is the external Spotify service implementation.
@@ -60,7 +65,7 @@ func NewSpotify(secrets config.Config) (*Spotify, error) {
 	return service, nil
 }
 
-// Name returns the human readable service name.
+// Name returns the human-readable service name.
 func (s *Spotify) Name() string {
 	return "Spotify"
 }
@@ -95,7 +100,7 @@ func (s *Spotify) Authenticate(code string, redirectURL string) error {
 	return nil
 }
 
-// GetUsername requests and returns the username of the logged in user.
+// GetUsername requests and returns the username of the logged-in user.
 func (s *Spotify) GetUsername() (string, error) {
 	user, err := s.client.CurrentUser()
 	if err != nil {
@@ -106,9 +111,11 @@ func (s *Spotify) GetUsername() (string, error) {
 }
 
 // GetLovedTracks returns loved tracks from the external service.
-func (s *Spotify) GetLovedTracks(limit int) (tracks []domain.Track, err error) {
+func (s *Spotify) GetLovedTracks(limit int, page int) (tracks []domain.Track, err error) {
+	offset := (page - 1) * limit
 	options := &spotify.Options{
-		Limit: &limit,
+		Limit:  &limit,
+		Offset: &offset,
 	}
 
 	result, err := s.client.CurrentUsersTracksOpt(options)
@@ -202,4 +209,84 @@ func (s *Spotify) authenticateFromSecrets(secrets config.Config) {
 
 	client := s.authenticator.NewClient(token)
 	s.client = &client
+}
+
+func (s *Spotify) GetUserId() (string, error) {
+	user, err := s.client.CurrentUser()
+	if err != nil {
+		return "", fmt.Errorf("failed to read Spotify profile data: %w", err)
+	}
+
+	return user.ID, nil
+}
+
+func (s *Spotify) DumpDiscoverWeeklyTracksToNewPlaylist(writer io.Writer) error {
+	userId, err := s.GetUserId()
+	fmt.Fprintln(writer, "UserID: ", userId)
+	if err != nil {
+		return fmt.Errorf("failed to read Spotify profile data: %w", err)
+	}
+
+	year, week := time.Now().UTC().ISOWeek()
+	playlistName := fmt.Sprintf("Discover Weekly #%d %d", week, year)
+	playlistDescription := fmt.Sprintf("Backup of the Discover Weekly playlist for %d week in %d.", week, year)
+	playlist, err := s.client.CreatePlaylistForUser(userId, playlistName, playlistDescription, true)
+	if err != nil {
+		return fmt.Errorf("failed to create Spotify playlist: %w", err)
+	}
+
+	offset := 0
+	limit := 50
+	tracksOpt := &spotify.Options{Limit: &limit, Offset: &offset}
+
+	for page := 1; ; page++ {
+		searchLimit := 1
+		searchOpt := &spotify.Options{Limit: &searchLimit}
+		sp, err := s.client.SearchOpt("Discover Weekly", spotify.SearchTypePlaylist, searchOpt)
+		if err != nil {
+			return fmt.Errorf("failed to search Discover Weekly playlist: %w", err)
+		}
+		if len(sp.Playlists.Playlists) == 0 {
+			return fmt.Errorf("playlist Discover Weekly not found")
+		}
+		playlistID := sp.Playlists.Playlists[0].ID
+		fmt.Fprintln(writer, "PlaylistID: ", playlistID)
+		tracks, err := s.client.GetPlaylistTracksOpt(playlistID, tracksOpt, "")
+		if err != nil {
+			return fmt.Errorf("failed to read Spotify playlist data: %w", err)
+		}
+		_, err = fmt.Fprintf(writer, "Playlist has %d total tracks\n", tracks.Total)
+		if err != nil {
+			return err
+		}
+
+		trackCount := len(tracks.Tracks)
+		fmt.Fprintf(writer, "Page %d has %d tracks\n", page, trackCount)
+		if trackCount == 0 {
+			break
+		}
+
+		var trackIDs []spotify.ID
+
+		for _, track := range tracks.Tracks {
+			trackIDs = append(trackIDs, track.Track.SimpleTrack.ID)
+			fmt.Fprintln(writer, track.Track.String())
+		}
+
+		if page == 1 {
+			if err := s.client.ReplacePlaylistTracks(playlist.ID, trackIDs...); err != nil {
+				return fmt.Errorf("failed to replace tracks in playlist: %w", err)
+			}
+		} else {
+			if _, err := s.client.AddTracksToPlaylist(playlist.ID, trackIDs...); err != nil {
+				return fmt.Errorf("failed to add tracks to playlist: %w", err)
+			}
+		}
+
+		if trackCount < limit {
+			break
+		}
+		offset += trackCount
+	}
+	return nil
 }

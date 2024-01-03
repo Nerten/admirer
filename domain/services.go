@@ -10,7 +10,7 @@ type Service interface {
 	CodeParam() string
 	Authenticate(code string, redirectURL string) error
 	GetUsername() (string, error)
-	GetLovedTracks(limit int) ([]Track, error)
+	GetLovedTracks(limit int, page int) ([]Track, error)
 	LoveTrack(track Track) error
 	Close() error
 }

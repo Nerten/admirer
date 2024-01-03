@@ -2,12 +2,12 @@ package services
 
 import (
 	"errors"
+	"go.uber.org/mock/gomock"
 	"reflect"
 	"testing"
 
 	"github.com/dietrichm/admirer/domain"
 	"github.com/dietrichm/admirer/infrastructure/config"
-	"github.com/golang/mock/gomock"
 )
 
 func TestMapServiceLoader(t *testing.T) {

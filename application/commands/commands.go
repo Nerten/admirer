@@ -12,6 +12,7 @@ var (
 		Short: "A command line utility to sync loved tracks between music services.",
 	}
 	limit int
+	page  int
 )
 
 // Execute runs the requested CLI command.

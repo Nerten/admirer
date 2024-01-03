@@ -2,11 +2,11 @@ package config
 
 import (
 	"errors"
+	"go.uber.org/mock/gomock"
 	"os"
 	"testing"
 
 	keyring_lib "github.com/99designs/keyring"
-	gomock "github.com/golang/mock/gomock"
 )
 
 func TestKeyringConfig(t *testing.T) {
