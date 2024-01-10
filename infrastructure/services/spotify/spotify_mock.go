@@ -10,9 +10,11 @@
 package spotify
 
 import (
+	context "context"
+	http "net/http"
 	reflect "reflect"
 
-	spotify "github.com/zmb3/spotify"
+	spotify "github.com/zmb3/spotify/v2"
 	gomock "go.uber.org/mock/gomock"
 	oauth2 "golang.org/x/oauth2"
 )
@@ -40,30 +42,44 @@ func (m *MockAuthenticator) EXPECT() *MockAuthenticatorMockRecorder {
 	return m.recorder
 }
 
-// AuthURLWithOpts mocks base method.
-func (m *MockAuthenticator) AuthURLWithOpts(state string, opts ...oauth2.AuthCodeOption) string {
+// AuthURL mocks base method.
+func (m *MockAuthenticator) AuthURL(state string, opts ...oauth2.AuthCodeOption) string {
 	m.ctrl.T.Helper()
 	varargs := []any{state}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "AuthURLWithOpts", varargs...)
+	ret := m.ctrl.Call(m, "AuthURL", varargs...)
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// AuthURLWithOpts indicates an expected call of AuthURLWithOpts.
-func (mr *MockAuthenticatorMockRecorder) AuthURLWithOpts(state any, opts ...any) *gomock.Call {
+// AuthURL indicates an expected call of AuthURL.
+func (mr *MockAuthenticatorMockRecorder) AuthURL(state any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{state}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthURLWithOpts", reflect.TypeOf((*MockAuthenticator)(nil).AuthURLWithOpts), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthURL", reflect.TypeOf((*MockAuthenticator)(nil).AuthURL), varargs...)
+}
+
+// Client mocks base method.
+func (m *MockAuthenticator) Client(ctx context.Context, token *oauth2.Token) *http.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Client", ctx, token)
+	ret0, _ := ret[0].(*http.Client)
+	return ret0
+}
+
+// Client indicates an expected call of Client.
+func (mr *MockAuthenticatorMockRecorder) Client(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Client", reflect.TypeOf((*MockAuthenticator)(nil).Client), ctx, token)
 }
 
 // Exchange mocks base method.
-func (m *MockAuthenticator) Exchange(arg0 string, arg1 ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
+func (m *MockAuthenticator) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0}
-	for _, a := range arg1 {
+	varargs := []any{ctx, code}
+	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "Exchange", varargs...)
@@ -73,36 +89,10 @@ func (m *MockAuthenticator) Exchange(arg0 string, arg1 ...oauth2.AuthCodeOption)
 }
 
 // Exchange indicates an expected call of Exchange.
-func (mr *MockAuthenticatorMockRecorder) Exchange(arg0 any, arg1 ...any) *gomock.Call {
+func (mr *MockAuthenticatorMockRecorder) Exchange(ctx, code any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0}, arg1...)
+	varargs := append([]any{ctx, code}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exchange", reflect.TypeOf((*MockAuthenticator)(nil).Exchange), varargs...)
-}
-
-// NewClient mocks base method.
-func (m *MockAuthenticator) NewClient(token *oauth2.Token) spotify.Client {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewClient", token)
-	ret0, _ := ret[0].(spotify.Client)
-	return ret0
-}
-
-// NewClient indicates an expected call of NewClient.
-func (mr *MockAuthenticatorMockRecorder) NewClient(token any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewClient", reflect.TypeOf((*MockAuthenticator)(nil).NewClient), token)
-}
-
-// SetAuthInfo mocks base method.
-func (m *MockAuthenticator) SetAuthInfo(clientID, secretKey string) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetAuthInfo", clientID, secretKey)
-}
-
-// SetAuthInfo indicates an expected call of SetAuthInfo.
-func (mr *MockAuthenticatorMockRecorder) SetAuthInfo(clientID, secretKey any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAuthInfo", reflect.TypeOf((*MockAuthenticator)(nil).SetAuthInfo), clientID, secretKey)
 }
 
 // MockClient is a mock of Client interface.
@@ -129,9 +119,9 @@ func (m *MockClient) EXPECT() *MockClientMockRecorder {
 }
 
 // AddTracksToLibrary mocks base method.
-func (m *MockClient) AddTracksToLibrary(ids ...spotify.ID) error {
+func (m *MockClient) AddTracksToLibrary(ctx context.Context, ids ...spotify.ID) error {
 	m.ctrl.T.Helper()
-	varargs := []any{}
+	varargs := []any{ctx}
 	for _, a := range ids {
 		varargs = append(varargs, a)
 	}
@@ -141,15 +131,16 @@ func (m *MockClient) AddTracksToLibrary(ids ...spotify.ID) error {
 }
 
 // AddTracksToLibrary indicates an expected call of AddTracksToLibrary.
-func (mr *MockClientMockRecorder) AddTracksToLibrary(ids ...any) *gomock.Call {
+func (mr *MockClientMockRecorder) AddTracksToLibrary(ctx any, ids ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTracksToLibrary", reflect.TypeOf((*MockClient)(nil).AddTracksToLibrary), ids...)
+	varargs := append([]any{ctx}, ids...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTracksToLibrary", reflect.TypeOf((*MockClient)(nil).AddTracksToLibrary), varargs...)
 }
 
 // AddTracksToPlaylist mocks base method.
-func (m *MockClient) AddTracksToPlaylist(playlistID spotify.ID, trackIDs ...spotify.ID) (string, error) {
+func (m *MockClient) AddTracksToPlaylist(ctx context.Context, playlistID spotify.ID, trackIDs ...spotify.ID) (string, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{playlistID}
+	varargs := []any{ctx, playlistID}
 	for _, a := range trackIDs {
 		varargs = append(varargs, a)
 	}
@@ -160,76 +151,86 @@ func (m *MockClient) AddTracksToPlaylist(playlistID spotify.ID, trackIDs ...spot
 }
 
 // AddTracksToPlaylist indicates an expected call of AddTracksToPlaylist.
-func (mr *MockClientMockRecorder) AddTracksToPlaylist(playlistID any, trackIDs ...any) *gomock.Call {
+func (mr *MockClientMockRecorder) AddTracksToPlaylist(ctx, playlistID any, trackIDs ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{playlistID}, trackIDs...)
+	varargs := append([]any{ctx, playlistID}, trackIDs...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTracksToPlaylist", reflect.TypeOf((*MockClient)(nil).AddTracksToPlaylist), varargs...)
 }
 
 // CreatePlaylistForUser mocks base method.
-func (m *MockClient) CreatePlaylistForUser(userID, playlistName, description string, public bool) (*spotify.FullPlaylist, error) {
+func (m *MockClient) CreatePlaylistForUser(ctx context.Context, userID, playlistName, description string, public, collaborative bool) (*spotify.FullPlaylist, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreatePlaylistForUser", userID, playlistName, description, public)
+	ret := m.ctrl.Call(m, "CreatePlaylistForUser", ctx, userID, playlistName, description, public, collaborative)
 	ret0, _ := ret[0].(*spotify.FullPlaylist)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreatePlaylistForUser indicates an expected call of CreatePlaylistForUser.
-func (mr *MockClientMockRecorder) CreatePlaylistForUser(userID, playlistName, description, public any) *gomock.Call {
+func (mr *MockClientMockRecorder) CreatePlaylistForUser(ctx, userID, playlistName, description, public, collaborative any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePlaylistForUser", reflect.TypeOf((*MockClient)(nil).CreatePlaylistForUser), userID, playlistName, description, public)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePlaylistForUser", reflect.TypeOf((*MockClient)(nil).CreatePlaylistForUser), ctx, userID, playlistName, description, public, collaborative)
 }
 
 // CurrentUser mocks base method.
-func (m *MockClient) CurrentUser() (*spotify.PrivateUser, error) {
+func (m *MockClient) CurrentUser(ctx context.Context) (*spotify.PrivateUser, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CurrentUser")
+	ret := m.ctrl.Call(m, "CurrentUser", ctx)
 	ret0, _ := ret[0].(*spotify.PrivateUser)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CurrentUser indicates an expected call of CurrentUser.
-func (mr *MockClientMockRecorder) CurrentUser() *gomock.Call {
+func (mr *MockClientMockRecorder) CurrentUser(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentUser", reflect.TypeOf((*MockClient)(nil).CurrentUser))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentUser", reflect.TypeOf((*MockClient)(nil).CurrentUser), ctx)
 }
 
-// CurrentUsersTracksOpt mocks base method.
-func (m *MockClient) CurrentUsersTracksOpt(opt *spotify.Options) (*spotify.SavedTrackPage, error) {
+// CurrentUsersTracks mocks base method.
+func (m *MockClient) CurrentUsersTracks(ctx context.Context, opts ...spotify.RequestOption) (*spotify.SavedTrackPage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CurrentUsersTracksOpt", opt)
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CurrentUsersTracks", varargs...)
 	ret0, _ := ret[0].(*spotify.SavedTrackPage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CurrentUsersTracksOpt indicates an expected call of CurrentUsersTracksOpt.
-func (mr *MockClientMockRecorder) CurrentUsersTracksOpt(opt any) *gomock.Call {
+// CurrentUsersTracks indicates an expected call of CurrentUsersTracks.
+func (mr *MockClientMockRecorder) CurrentUsersTracks(ctx any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentUsersTracksOpt", reflect.TypeOf((*MockClient)(nil).CurrentUsersTracksOpt), opt)
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentUsersTracks", reflect.TypeOf((*MockClient)(nil).CurrentUsersTracks), varargs...)
 }
 
-// GetPlaylistTracksOpt mocks base method.
-func (m *MockClient) GetPlaylistTracksOpt(id spotify.ID, opt *spotify.Options, fields string) (*spotify.PlaylistTrackPage, error) {
+// GetPlaylistItems mocks base method.
+func (m *MockClient) GetPlaylistItems(ctx context.Context, playlistID spotify.ID, opts ...spotify.RequestOption) (*spotify.PlaylistItemPage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPlaylistTracksOpt", id, opt, fields)
-	ret0, _ := ret[0].(*spotify.PlaylistTrackPage)
+	varargs := []any{ctx, playlistID}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetPlaylistItems", varargs...)
+	ret0, _ := ret[0].(*spotify.PlaylistItemPage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPlaylistTracksOpt indicates an expected call of GetPlaylistTracksOpt.
-func (mr *MockClientMockRecorder) GetPlaylistTracksOpt(id, opt, fields any) *gomock.Call {
+// GetPlaylistItems indicates an expected call of GetPlaylistItems.
+func (mr *MockClientMockRecorder) GetPlaylistItems(ctx, playlistID any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlaylistTracksOpt", reflect.TypeOf((*MockClient)(nil).GetPlaylistTracksOpt), id, opt, fields)
+	varargs := append([]any{ctx, playlistID}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlaylistItems", reflect.TypeOf((*MockClient)(nil).GetPlaylistItems), varargs...)
 }
 
 // ReplacePlaylistTracks mocks base method.
-func (m *MockClient) ReplacePlaylistTracks(playlistID spotify.ID, trackIDs ...spotify.ID) error {
+func (m *MockClient) ReplacePlaylistTracks(ctx context.Context, playlistID spotify.ID, trackIDs ...spotify.ID) error {
 	m.ctrl.T.Helper()
-	varargs := []any{playlistID}
+	varargs := []any{ctx, playlistID}
 	for _, a := range trackIDs {
 		varargs = append(varargs, a)
 	}
@@ -239,25 +240,30 @@ func (m *MockClient) ReplacePlaylistTracks(playlistID spotify.ID, trackIDs ...sp
 }
 
 // ReplacePlaylistTracks indicates an expected call of ReplacePlaylistTracks.
-func (mr *MockClientMockRecorder) ReplacePlaylistTracks(playlistID any, trackIDs ...any) *gomock.Call {
+func (mr *MockClientMockRecorder) ReplacePlaylistTracks(ctx, playlistID any, trackIDs ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{playlistID}, trackIDs...)
+	varargs := append([]any{ctx, playlistID}, trackIDs...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReplacePlaylistTracks", reflect.TypeOf((*MockClient)(nil).ReplacePlaylistTracks), varargs...)
 }
 
-// SearchOpt mocks base method.
-func (m *MockClient) SearchOpt(query string, t spotify.SearchType, opt *spotify.Options) (*spotify.SearchResult, error) {
+// Search mocks base method.
+func (m *MockClient) Search(ctx context.Context, query string, t spotify.SearchType, opts ...spotify.RequestOption) (*spotify.SearchResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SearchOpt", query, t, opt)
+	varargs := []any{ctx, query, t}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Search", varargs...)
 	ret0, _ := ret[0].(*spotify.SearchResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SearchOpt indicates an expected call of SearchOpt.
-func (mr *MockClientMockRecorder) SearchOpt(query, t, opt any) *gomock.Call {
+// Search indicates an expected call of Search.
+func (mr *MockClientMockRecorder) Search(ctx, query, t any, opts ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchOpt", reflect.TypeOf((*MockClient)(nil).SearchOpt), query, t, opt)
+	varargs := append([]any{ctx, query, t}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Search", reflect.TypeOf((*MockClient)(nil).Search), varargs...)
 }
 
 // Token mocks base method.

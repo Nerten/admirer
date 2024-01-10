@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go.uber.org/mock/gomock"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/dietrichm/admirer/domain"
 	"github.com/dietrichm/admirer/infrastructure/config"
-	"github.com/zmb3/spotify"
+	"github.com/zmb3/spotify/v2"
 	"golang.org/x/oauth2"
 )
 
@@ -37,7 +38,7 @@ func TestSpotify(t *testing.T) {
 
 		redirectOption := oauth2.SetAuthURLParam("redirect_uri", "https://admirer.test/foo")
 		authenticator := NewMockAuthenticator(ctrl)
-		authenticator.EXPECT().AuthURLWithOpts(gomock.Any(), redirectOption).Return("https://service.test/auth")
+		authenticator.EXPECT().AuthURL(gomock.Any(), redirectOption).Return("https://service.test/auth")
 
 		service := &Spotify{authenticator: authenticator}
 
@@ -60,11 +61,11 @@ func TestSpotify(t *testing.T) {
 			RefreshToken: "myRefreshToken",
 		}
 
-		client := spotify.Client{}
+		client := &http.Client{}
 		redirectOption := oauth2.SetAuthURLParam("redirect_uri", "https://admirer.test/foo")
 		authenticator := NewMockAuthenticator(ctrl)
-		authenticator.EXPECT().Exchange("authcode", redirectOption).Return(token, nil)
-		authenticator.EXPECT().NewClient(token).Return(client)
+		authenticator.EXPECT().Exchange(gomock.Any(), "authcode", redirectOption).Return(token, nil)
+		authenticator.EXPECT().Client(gomock.Any(), token).Return(client)
 
 		service := &Spotify{
 			authenticator: authenticator,
@@ -85,7 +86,7 @@ func TestSpotify(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		authenticator := NewMockAuthenticator(ctrl)
-		authenticator.EXPECT().Exchange(gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
+		authenticator.EXPECT().Exchange(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("error"))
 
 		service := &Spotify{authenticator: authenticator}
 
@@ -106,7 +107,7 @@ func TestSpotify(t *testing.T) {
 		}
 
 		client := NewMockClient(ctrl)
-		client.EXPECT().CurrentUser().Return(user, nil)
+		client.EXPECT().CurrentUser(gomock.Any()).Return(user, nil)
 
 		service := &Spotify{client: client}
 
@@ -126,7 +127,7 @@ func TestSpotify(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		client := NewMockClient(ctrl)
-		client.EXPECT().CurrentUser().Return(nil, errors.New("error"))
+		client.EXPECT().CurrentUser(gomock.Any()).Return(nil, errors.New("error"))
 
 		service := &Spotify{client: client}
 
@@ -152,10 +153,10 @@ func TestSpotify(t *testing.T) {
 			Expiry:       now.Truncate(time.Second),
 			RefreshToken: "myRefreshToken",
 		}
-		client := spotify.Client{}
+		client := &http.Client{}
 
 		authenticator := NewMockAuthenticator(ctrl)
-		authenticator.EXPECT().NewClient(&tokenMatcher{token}).Return(client)
+		authenticator.EXPECT().Client(gomock.Any(), &tokenMatcher{token}).Return(client)
 
 		secrets := config.NewMockConfig(ctrl)
 		secrets.EXPECT().IsSet("token_type").Return(true)
@@ -205,12 +206,7 @@ func TestSpotify(t *testing.T) {
 		}
 
 		client := NewMockClient(ctrl)
-		limit := 5
-		options := &spotify.Options{
-			Limit: &limit,
-		}
-		client.EXPECT().CurrentUsersTracksOpt(options).Return(result, nil)
-
+		client.EXPECT().CurrentUsersTracks(gomock.Any(), gomock.Any()).Return(result, nil)
 		service := &Spotify{
 			client: client,
 		}
@@ -242,7 +238,7 @@ func TestSpotify(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		client := NewMockClient(ctrl)
-		client.EXPECT().CurrentUsersTracksOpt(gomock.Any()).Return(nil, errors.New("read error"))
+		client.EXPECT().CurrentUsersTracks(gomock.Any(), gomock.Any()).Return(nil, errors.New("read error"))
 
 		service := &Spotify{
 			client: client,
@@ -262,10 +258,6 @@ func TestSpotify(t *testing.T) {
 	t.Run("marks track as loved", func(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
-		limit := 1
-		options := &spotify.Options{
-			Limit: &limit,
-		}
 		result := &spotify.SearchResult{
 			Tracks: &spotify.FullTrackPage{
 				Tracks: []spotify.FullTrack{
@@ -279,8 +271,8 @@ func TestSpotify(t *testing.T) {
 		}
 
 		client := NewMockClient(ctrl)
-		client.EXPECT().SearchOpt(`artist:"Foo & Bar The Famous Two" track:"Mr. Testy - 12 Version"`, gomock.Any(), options).Return(result, nil)
-		client.EXPECT().AddTracksToLibrary([]spotify.ID{"trackID"})
+		client.EXPECT().Search(gomock.Any(), `artist:"Foo & Bar The Famous Two" track:"Mr. Testy - 12 Version"`, gomock.Any(), gomock.Any()).Return(result, nil)
+		client.EXPECT().AddTracksToLibrary(gomock.Any(), []spotify.ID{"trackID"})
 
 		service := &Spotify{
 			client: client,
@@ -302,7 +294,7 @@ func TestSpotify(t *testing.T) {
 		ctrl := gomock.NewController(t)
 
 		client := NewMockClient(ctrl)
-		client.EXPECT().SearchOpt(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("read error"))
+		client.EXPECT().Search(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, errors.New("read error"))
 
 		service := &Spotify{
 			client: client,
@@ -330,7 +322,7 @@ func TestSpotify(t *testing.T) {
 		}
 
 		client := NewMockClient(ctrl)
-		client.EXPECT().SearchOpt(gomock.Any(), gomock.Any(), gomock.Any()).Return(result, nil)
+		client.EXPECT().Search(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(result, nil)
 
 		service := &Spotify{
 			client: client,
@@ -364,8 +356,8 @@ func TestSpotify(t *testing.T) {
 		}
 
 		client := NewMockClient(ctrl)
-		client.EXPECT().SearchOpt(gomock.Any(), gomock.Any(), gomock.Any()).Return(result, nil)
-		client.EXPECT().AddTracksToLibrary(gomock.Any()).Return(errors.New("api error"))
+		client.EXPECT().Search(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(result, nil)
+		client.EXPECT().AddTracksToLibrary(gomock.Any(), gomock.Any()).Return(errors.New("api error"))
 
 		service := &Spotify{
 			client: client,
