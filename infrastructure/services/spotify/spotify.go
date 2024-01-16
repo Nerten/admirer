@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -37,6 +38,9 @@ type Client interface {
 	CreatePlaylistForUser(ctx context.Context, userID, playlistName, description string, public bool, collaborative bool) (*spotify.FullPlaylist, error)
 	ReplacePlaylistTracks(ctx context.Context, playlistID spotify.ID, trackIDs ...spotify.ID) error
 	AddTracksToPlaylist(ctx context.Context, playlistID spotify.ID, trackIDs ...spotify.ID) (snapshotID string, err error)
+	CurrentUsersTopArtists(ctx context.Context, opts ...spotify.RequestOption) (*spotify.FullArtistPage, error)
+	CurrentUsersTopTracks(ctx context.Context, opts ...spotify.RequestOption) (*spotify.FullTrackPage, error)
+	GetRecommendations(ctx context.Context, seeds spotify.Seeds, trackAttributes *spotify.TrackAttributes, opts ...spotify.RequestOption) (*spotify.Recommendations, error)
 }
 
 // Spotify is the external Spotify service implementation.
@@ -59,7 +63,13 @@ func NewSpotify(secrets config.Config) (*Spotify, error) {
 		spotifyauth.WithClientID(clientID),
 		spotifyauth.WithClientSecret(clientSecret),
 		spotifyauth.WithRedirectURL(""),
-		spotifyauth.WithScopes(spotifyauth.ScopeUserReadPrivate, spotifyauth.ScopeUserLibraryRead, spotifyauth.ScopeUserLibraryModify),
+		spotifyauth.WithScopes(
+			spotifyauth.ScopeUserReadPrivate,
+			spotifyauth.ScopeUserLibraryRead,
+			spotifyauth.ScopeUserLibraryModify,
+			spotifyauth.ScopePlaylistModifyPublic,
+			spotifyauth.ScopeUserTopRead,
+		),
 	)
 
 	service := &Spotify{
@@ -231,10 +241,10 @@ func (s *Spotify) GetUserId() (string, error) {
 func (s *Spotify) DumpDiscoverWeeklyTracksToNewPlaylist(writer io.Writer) error {
 	ctx := context.Background()
 	userId, err := s.GetUserId()
-	fmt.Fprintln(writer, "UserID: ", userId)
 	if err != nil {
 		return fmt.Errorf("failed to read Spotify profile data: %w", err)
 	}
+	fmt.Fprintln(writer, "UserID: ", userId)
 
 	year, week := time.Now().UTC().ISOWeek()
 	playlistName := fmt.Sprintf("Discover Weekly #%d %d", week, year)
@@ -276,7 +286,6 @@ func (s *Spotify) DumpDiscoverWeeklyTracksToNewPlaylist(writer io.Writer) error 
 		}
 
 		var trackIDs []spotify.ID
-
 		for _, track := range tracks.Items {
 			trackIDs = append(trackIDs, track.Track.Track.ID)
 			fmt.Fprintln(writer, track.Track.Track.String())
@@ -297,5 +306,71 @@ func (s *Spotify) DumpDiscoverWeeklyTracksToNewPlaylist(writer io.Writer) error 
 		}
 		offset += trackCount
 	}
+	return nil
+}
+
+func (s *Spotify) DiscoverDailyPlaylist(writer io.Writer) error {
+	ctx := context.Background()
+	userId, err := s.GetUserId()
+	if err != nil {
+		return fmt.Errorf("failed to read Spotify profile data: %w", err)
+	}
+	timeRanges := []spotify.Range{spotify.LongTermRange, spotify.MediumTermRange, spotify.ShortTermRange}
+	timeRange := timeRanges[rand.Intn(len(timeRanges))]
+	topRequestOptions := []spotify.RequestOption{spotify.Timerange(timeRange), spotify.Limit(50)}
+	topArtists, err := s.client.CurrentUsersTopArtists(ctx, topRequestOptions...)
+	if err != nil {
+		return fmt.Errorf("failed to get current user top artist from Spotify: %w", err)
+	}
+	var topArtistIDs []spotify.ID
+	for _, artist := range topArtists.Artists {
+		topArtistIDs = append(topArtistIDs, artist.ID)
+	}
+	//randomize top artist IDs
+	rand.Shuffle(len(topArtistIDs), func(i, j int) { topArtistIDs[i], topArtistIDs[j] = topArtistIDs[j], topArtistIDs[i] })
+
+	topTracks, err := s.client.CurrentUsersTopTracks(ctx, topRequestOptions...)
+	if err != nil {
+		return fmt.Errorf("failed to get current user top tracks from Spotify: %w", err)
+	}
+	var topTrackIDs []spotify.ID
+	for _, track := range topTracks.Tracks {
+		topTrackIDs = append(topTrackIDs, track.ID)
+	}
+	//shuffle top track IDs
+	rand.Shuffle(len(topArtistIDs), func(i, j int) { topTrackIDs[i], topTrackIDs[j] = topTrackIDs[j], topTrackIDs[i] })
+
+	opts := []spotify.RequestOption{spotify.Limit(100)}
+	recommendedTracks, err := s.client.GetRecommendations(ctx,
+		spotify.Seeds{
+			//Max seeds count is 5!
+			Artists: topArtistIDs[:2], // first 2 artists
+			Tracks:  topTrackIDs[:3],  // first 3 tracks
+		},
+		//TODO: Add more options like Tempo, Acousticness, Danceability, Energy, Instrumentalness, Liveness, Valence
+		spotify.NewTrackAttributes(),
+		opts...)
+	if err != nil {
+		return fmt.Errorf("failed to get recommendations from Spotify: %w", err)
+	}
+
+	var trackIDs []spotify.ID
+	for _, track := range recommendedTracks.Tracks {
+		trackIDs = append(trackIDs, track.ID)
+		fmt.Fprintln(writer, track.String())
+	}
+
+	date := time.Now().UTC().Format("02-01-2006")
+	playlistName := fmt.Sprintf("Discover Daily %s", date)
+	playlistDescription := fmt.Sprintf("Discover Daily playlist for %s from recomendations with options: %s", date, timeRange)
+	playlist, err := s.client.CreatePlaylistForUser(ctx, userId, playlistName, playlistDescription, true, false)
+	if err != nil {
+		return fmt.Errorf("failed to create Spotify playlist: %w", err)
+	}
+
+	if _, err := s.client.AddTracksToPlaylist(ctx, playlist.ID, trackIDs...); err != nil {
+		return fmt.Errorf("failed to add tracks to playlist: %w", err)
+	}
+
 	return nil
 }
