@@ -209,6 +209,7 @@ func TestLastfm(t *testing.T) {
 		userAPI.EXPECT().GetLovedTracks(lastfm.P{
 			"user":  "Diana",
 			"limit": 5,
+			"page":  1,
 		}).Return(result, nil)
 
 		service := &Lastfm{userAPI: userAPI}
