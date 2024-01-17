@@ -187,6 +187,46 @@ func (mr *MockClientMockRecorder) CurrentUser(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentUser", reflect.TypeOf((*MockClient)(nil).CurrentUser), ctx)
 }
 
+// CurrentUsersTopArtists mocks base method.
+func (m *MockClient) CurrentUsersTopArtists(ctx context.Context, opts ...spotify.RequestOption) (*spotify.FullArtistPage, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CurrentUsersTopArtists", varargs...)
+	ret0, _ := ret[0].(*spotify.FullArtistPage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CurrentUsersTopArtists indicates an expected call of CurrentUsersTopArtists.
+func (mr *MockClientMockRecorder) CurrentUsersTopArtists(ctx any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentUsersTopArtists", reflect.TypeOf((*MockClient)(nil).CurrentUsersTopArtists), varargs...)
+}
+
+// CurrentUsersTopTracks mocks base method.
+func (m *MockClient) CurrentUsersTopTracks(ctx context.Context, opts ...spotify.RequestOption) (*spotify.FullTrackPage, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CurrentUsersTopTracks", varargs...)
+	ret0, _ := ret[0].(*spotify.FullTrackPage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CurrentUsersTopTracks indicates an expected call of CurrentUsersTopTracks.
+func (mr *MockClientMockRecorder) CurrentUsersTopTracks(ctx any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CurrentUsersTopTracks", reflect.TypeOf((*MockClient)(nil).CurrentUsersTopTracks), varargs...)
+}
+
 // CurrentUsersTracks mocks base method.
 func (m *MockClient) CurrentUsersTracks(ctx context.Context, opts ...spotify.RequestOption) (*spotify.SavedTrackPage, error) {
 	m.ctrl.T.Helper()
@@ -225,6 +265,26 @@ func (mr *MockClientMockRecorder) GetPlaylistItems(ctx, playlistID any, opts ...
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, playlistID}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlaylistItems", reflect.TypeOf((*MockClient)(nil).GetPlaylistItems), varargs...)
+}
+
+// GetRecommendations mocks base method.
+func (m *MockClient) GetRecommendations(ctx context.Context, seeds spotify.Seeds, trackAttributes *spotify.TrackAttributes, opts ...spotify.RequestOption) (*spotify.Recommendations, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, seeds, trackAttributes}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetRecommendations", varargs...)
+	ret0, _ := ret[0].(*spotify.Recommendations)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRecommendations indicates an expected call of GetRecommendations.
+func (mr *MockClientMockRecorder) GetRecommendations(ctx, seeds, trackAttributes any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, seeds, trackAttributes}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecommendations", reflect.TypeOf((*MockClient)(nil).GetRecommendations), varargs...)
 }
 
 // ReplacePlaylistTracks mocks base method.
