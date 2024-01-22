@@ -8,7 +8,7 @@ require (
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
-	github.com/zmb3/spotify/v2 v2.4.0
+	github.com/zmb3/spotify/v2 v2.4.1
 	go.uber.org/mock v0.4.0
 	golang.org/x/oauth2 v0.16.0
 	honnef.co/go/tools v0.4.6
