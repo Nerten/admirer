@@ -11,7 +11,7 @@ require (
 	github.com/zmb3/spotify/v2 v2.4.0
 	go.uber.org/mock v0.4.0
 	golang.org/x/oauth2 v0.16.0
-	honnef.co/go/tools v0.4.6
+	honnef.co/go/tools v0.4.7
 )
 
 require (
